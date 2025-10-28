@@ -12,14 +12,10 @@ import java.util.concurrent.Executors;
 
 public class TemperatureViewModel extends ViewModel {
 
-    // Executor para el hilo secundario
     private final ExecutorService executorService = Executors.newSingleThreadExecutor();
     private final Random random = new Random();
 
-    // LiveData para la lista de temperaturas (para el gráfico)
     private final MutableLiveData<List<Float>> temperatures = new MutableLiveData<>();
-
-    // LiveData para la media final del día (para disparar el JobScheduler)
     private final MutableLiveData<Float> dailyAverage = new MutableLiveData<>();
 
     public LiveData<List<Float>> getTemperatures() {
@@ -30,37 +26,44 @@ public class TemperatureViewModel extends ViewModel {
         return dailyAverage;
     }
 
-    /**
-     * Inicia la generación de 24 temperaturas en un hilo secundario.
-     */
     public void startTemperatureGeneration() {
-        // Resetea la media para que el observador no se dispare por un valor antiguo
         dailyAverage.setValue(null);
 
         executorService.execute(() -> {
             List<Float> tempList = new ArrayList<>();
             float sum = 0;
 
+            int dayType = random.nextInt(3);
+            float baseTemp;
+
+            if (dayType == 0) {
+                baseTemp = 16.0f;
+            } else if (dayType == 1) {
+                baseTemp = 21.0f;
+            } else {
+                baseTemp = 27.0f;
+            }
+
             for (int i = 0; i < 24; i++) {
-                // Genera temperatura entre 10.0 y 40.0
-                float temp = 10.0f + random.nextFloat() * 30.0f;
+                float variation = (random.nextFloat() * 6.0f) - 3.0f;
+                float temp = baseTemp + variation;
+
+                if (temp < 10.0f) temp = 10.0f;
+                if (temp > 40.0f) temp = 40.0f;
+
                 sum += temp;
                 tempList.add(temp);
 
-                // Publica el valor en el LiveData (para el hilo principal)
-                // Se postea una copia para asegurar que el observador detecte el cambio
                 temperatures.postValue(new ArrayList<>(tempList));
 
-                // Simula el paso de una hora
                 try {
-                    Thread.sleep(500); // 0.5 segundos por "hora" para demo
+                    Thread.sleep(250);
                 } catch (InterruptedException e) {
                     Thread.currentThread().interrupt();
                     return;
                 }
             }
 
-            // Cálculo final y publicación de la media
             float average = sum / 24;
             dailyAverage.postValue(average);
         });
@@ -69,7 +72,6 @@ public class TemperatureViewModel extends ViewModel {
     @Override
     protected void onCleared() {
         super.onCleared();
-        // Detener el hilo si el ViewModel se destruye
         executorService.shutdownNow();
     }
 }

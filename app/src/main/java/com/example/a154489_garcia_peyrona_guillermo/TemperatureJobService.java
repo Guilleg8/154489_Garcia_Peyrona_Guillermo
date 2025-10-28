@@ -8,28 +8,22 @@ public class TemperatureJobService extends JobService {
 
     public static final String KEY_AVERAGE_TEMP = "averageTemp";
 
-    // ...
     @Override
     public boolean onStartJob(JobParameters params) {
         PersistableBundle extras = params.getExtras();
         if (extras != null) {
 
-            // --- CAMBIO AQUÍ ---
-            // float average = extras.getFloat(KEY_AVERAGE_TEMP, 0.0f); // <- LÍNEA ANTIGUA
-            float average = (float) extras.getDouble(KEY_AVERAGE_TEMP, 0.0); // <- LÍNEA NUEVA
-            // --- FIN DEL CAMBIO ---
+            float average = (float) extras.getDouble(KEY_AVERAGE_TEMP, 0.0);
 
-            // Delegar la creación de la notificación
             NotificationsUtils.sendTemperatureNotification(getApplicationContext(), average);
         }
 
         jobFinished(params, false);
         return true;
     }
-    // ...
+
     @Override
     public boolean onStopJob(JobParameters params) {
-        // Si el sistema cancela el job, no queremos re-planificarlo
         return false;
     }
 }
